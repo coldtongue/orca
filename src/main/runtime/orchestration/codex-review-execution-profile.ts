@@ -19,7 +19,9 @@ export function resolveCodexReviewExecutionProfile(
   }
   const permission = settings.agentPermission
   const choice = permission?.overrides.codex ?? permission?.default
-  const userArgs = permission?.userArgs.codex
+  const userArgs = settings.agentChoices
+    ? (settings.agentChoices.userArgs.codex ?? '')
+    : permission?.userArgs.codex
   const command = settings.agentCmdOverrides.codex ?? ''
   const environment = settings.environmentNames.codex ?? []
   if (
@@ -34,7 +36,13 @@ export function resolveCodexReviewExecutionProfile(
   ) {
     throw new Error('execution_profile_requires_existing_unsandboxed_permission')
   }
-  const settingsSha256 = digest([choice, userArgs, command, [...environment].sort()])
+  const settingsSha256 = digest([
+    choice,
+    userArgs,
+    command,
+    [...environment].sort(),
+    settings.agentChoices?.defaults.codex ?? null
+  ])
   const sha256 = digest([
     1,
     CODEX_REVIEW_EXECUTION_PROFILE,

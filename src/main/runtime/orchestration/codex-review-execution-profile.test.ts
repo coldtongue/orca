@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { AgentLaunchSettings } from '../../../shared/agent-launch-settings'
+import {
+  projectAgentLaunchSettings,
+  type AgentLaunchSettings
+} from '../../../shared/agent-launch-settings'
+import { resolveAgentStartupPlanInputs } from '../../../shared/agent-startup-plan-inputs'
 import { CODEX_REVIEW_EXECUTION_ARGS } from '../../../shared/worker-execution-profile'
 import {
   assertWorkerExecutionProfile,
@@ -92,5 +96,51 @@ describe('Codex reviewer execution profile', () => {
       mutate(value)
       expect(() => resolveCodexReviewExecutionProfile(value, scope)).toThrow('requires_existing')
     }
+  })
+})
+
+describe('actual dedicated launch settings projection', () => {
+  it.each(['full-access', 'own'] as const)(
+    'keeps %s separate from model and effort defaults',
+    (permission) => {
+      const raw = {
+        agentPermissionDefault: permission,
+        agentDefaultArgs: { codex: permission === 'own' ? CODEX_REVIEW_EXECUTION_ARGS : '' },
+        agentLaunchChoices: { codex: { model: 'gpt-5.2-codex', options: { effort: 'high' } } }
+      }
+      const projected = projectAgentLaunchSettings(raw, 'darwin')
+      expect(projected.agentPermission?.userArgs.codex).toContain('-m gpt-5.2-codex')
+      const before = structuredClone(raw)
+      const profile = resolveCodexReviewExecutionProfile(projected, scope)
+      const inputs = resolveAgentStartupPlanInputs({
+        agent: 'codex',
+        settings: raw,
+        platform: 'darwin',
+        isRemote: false,
+        shell: 'posix',
+        agentArgs: profile.args
+      })
+      expect(inputs.agentArgs).toBe(CODEX_REVIEW_EXECUTION_ARGS)
+      expect(inputs.sessionOptions).toMatchObject({ model: 'gpt-5.2-codex', effort: 'high' })
+      expect(raw).toEqual(before)
+      raw.agentLaunchChoices.codex.options.effort = 'low'
+      expect(() =>
+        assertWorkerExecutionProfile(
+          resolveCodexReviewExecutionProfile(projectAgentLaunchSettings(raw, 'darwin'), scope),
+          profile.sha256
+        )
+      ).toThrow('execution_profile_changed')
+    }
+  )
+  it('still rejects raw custom args when dedicated choices are present', () => {
+    const projected = projectAgentLaunchSettings(
+      {
+        agentPermissionDefault: 'full-access',
+        agentDefaultArgs: { codex: '-a never' },
+        agentLaunchChoices: { codex: { model: 'gpt-5.2-codex' } }
+      },
+      'darwin'
+    )
+    expect(() => resolveCodexReviewExecutionProfile(projected, scope)).toThrow('requires_existing')
   })
 })
