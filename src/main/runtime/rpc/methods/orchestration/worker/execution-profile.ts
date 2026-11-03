@@ -1,9 +1,11 @@
 import type { WorkerStartInput } from './worker-start-schema'
 import type { WorkerStartModeReceipt } from '../../orchestration-worker-start-mode'
-import { assertWorkerExecutionProfile } from '../../../../orchestration/codex-review-execution-profile'
+import {
+  assertWorkerExecutionProfile,
+  resolveCodexReviewExecutionProfile
+} from '../../../../orchestration/codex-review-execution-profile'
 import type { OrcaRuntimeService } from '../../../../orca-runtime'
 import { OrchestrationError } from '../../../../orchestration/orchestration-error'
-import { resolveCodexReviewExecutionProfile } from '../../../../orchestration/codex-review-execution-profile'
 
 type ExecutionProfileRuntime = Pick<
   OrcaRuntimeService,
