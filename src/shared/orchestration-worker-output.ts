@@ -1,3 +1,4 @@
+import type { CodexWorkerModeEvidence } from './worker-execution-profile'
 import type { AgentProviderSessionMetadata } from './agent-session/lifecycle/agent-session-resume'
 import type { AgentType } from './agent-status-types'
 import type { NativeChatMessage } from './native-chat/native-chat-types'
@@ -40,6 +41,7 @@ export type OrchestrationWorkerTranscriptPage = {
 }
 
 export type OrchestrationWorkerReadTranscriptResult = {
+  executionMode?: CodexWorkerModeEvidence
   dispatchId: string
   source: 'transcript'
   sourceIdentity: string

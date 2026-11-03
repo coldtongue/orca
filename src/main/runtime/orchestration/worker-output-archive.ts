@@ -1,3 +1,5 @@
+import { readCodexWorkerModeEvidence } from './codex-worker-mode-evidence'
+import type { CodexWorkerModeEvidence } from '../../../shared/worker-execution-profile'
 import type { AgentType } from '../../../shared/agent-status-types'
 import type { NativeChatMessage } from '../../../shared/native-chat/native-chat-types'
 import type { OrchestrationWorkerReadFallbackReason } from '../../../shared/orchestration-worker-output'
@@ -22,6 +24,7 @@ import { readWorkerTerminalArchive } from './worker-terminal-archive-read'
 const TERMINAL_ARCHIVE_MAX_CHARS = 262_144
 
 export type WorkerTranscriptSnapshotArchive = {
+  executionMode?: CodexWorkerModeEvidence
   version: 2
   agent: AgentType
   processIncarnation: string
@@ -121,6 +124,15 @@ export async function captureWorkerOutputArchive(args: {
             version: 2,
             agent: session.agent,
             processIncarnation: session.processIncarnation,
+            ...(session.agent === 'codex' && !session.connectionId
+              ? {
+                  executionMode: await readCodexWorkerModeEvidence(
+                    snapshot.filePath,
+                    session.providerSession.id,
+                    snapshot.sourceFingerprint
+                  )
+                }
+              : {}),
             messages: snapshot.messages,
             limited: snapshot.limited,
             clipping: snapshot.clipping,

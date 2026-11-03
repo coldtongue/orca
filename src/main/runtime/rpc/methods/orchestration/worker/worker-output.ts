@@ -1,3 +1,4 @@
+import { readCodexWorkerModeEvidence } from '../../../../orchestration/codex-worker-mode-evidence'
 import type {
   OrchestrationWorkerReadFallbackReason,
   OrchestrationWorkerReadResult,
@@ -86,6 +87,14 @@ export async function readExactWorkerOutput(args: {
   if (cursor?.source === 'transcript' && cursor.sourceIdentity !== sourceIdentity) {
     throw sourceChanged()
   }
+  const executionMode =
+    session.agent === 'codex' && !session.connectionId
+      ? await readCodexWorkerModeEvidence(
+          transcript.filePath,
+          session.providerSession.id,
+          transcript.sourceFingerprint
+        )
+      : undefined
   const sessionAfterRead = args.runtime.getExactWorkerProviderSession(
     args.terminalHandle,
     observedAfter
@@ -112,6 +121,7 @@ export async function readExactWorkerOutput(args: {
   return {
     dispatchId: args.dispatchId,
     source: 'transcript',
+    ...(executionMode ? { executionMode } : {}),
     sourceIdentity,
     provider: session.agent,
     transcript: {

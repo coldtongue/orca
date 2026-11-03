@@ -1,3 +1,4 @@
+import { prepareLocalWorkerExecutionProfile } from './execution-profile'
 import { createLocalWorkerStartDispatch } from './local-worker-start-dispatch'
 import { probeWorkerOpenCodeModelLaunchSupport } from './worker-opencode-model-preflight'
 import { resolveWorkerConfiguredAgentParams } from './worker-configured-agent-preflight'
@@ -25,7 +26,7 @@ import {
   persistWorkerReadinessStage,
   persistWorkerSetupWaitOutcome
 } from './worker-setup-gate'
-import { failWorkerStartWithReceipt } from './worker-start-receipt'
+import { failWorkerStartWithReceipt, finishWorkerStart } from './worker-start-receipt'
 import { assertExplicitWorkerUsable } from './explicit-worker-terminal-validation'
 import { resolveDispatchAssigneeParty } from '../../../../orchestration/orchestration-party'
 import { chatAssigneeOf, chatWorkerMode } from '../chat-assignee-admission'
@@ -138,6 +139,13 @@ export async function startLocalWorker(args: {
   const hostMode = resolveWorkerStartModeOnHost(runtime, args.mode, resolvedWorktree?.id, agent)
   let mode = chatWorkerMode(await hostMode, chat)
 
+  const executionProfile = await prepareLocalWorkerExecutionProfile(
+    runtime,
+    params,
+    mode,
+    Boolean(args.followUp)
+  )
+
   const run = args.bindRun()
   const started = createLocalWorkerStartDispatch(args, {
     params,
@@ -179,6 +187,7 @@ export async function startLocalWorker(args: {
       mode,
       agent,
       launchPreferences: launch.preferences,
+      ...(executionProfile ? { executionProfile } : {}),
       effects,
       onStage,
       followUp: args.followUp
@@ -291,20 +300,11 @@ export async function startLocalWorker(args: {
       mode
     })
   }
-  if (
-    !params.terminal &&
-    terminalHandle &&
-    result &&
-    typeof result === 'object' &&
-    'state' in result &&
-    result.state === 'ready'
-  ) {
-    recordStart({
-      dispatchId: started.dispatch.id,
-      workerAddress: terminalHandle,
-      task: task.spec,
-      agent: agent ?? null
-    })
-  }
-  return result
+  return finishWorkerStart({
+    result,
+    executionProfile,
+    terminalHandle: params.terminal ? undefined : terminalHandle,
+    recordReady: recordStart,
+    card: { dispatchId: started.dispatch.id, task: task.spec, agent: agent ?? null }
+  })
 }

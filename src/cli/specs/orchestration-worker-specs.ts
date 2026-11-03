@@ -2,10 +2,17 @@ import { GLOBAL_FLAGS, type CommandSpec } from '../args'
 
 export const ORCHESTRATION_WORKER_COMMAND_SPECS: CommandSpec[] = [
   {
+    path: ['orchestration', 'execution-profile'],
+    summary: 'Resolve an explicit worker execution profile without launching or changing settings',
+    usage: 'orca orchestration execution-profile --profile <id> --worktree id:<workspace> [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'profile', 'worktree'],
+    notes: ['Returns a runtime/workspace-scoped profile digest. No agent, Task or Run is created.']
+  },
+  {
     path: ['orchestration', 'worker-start'],
     summary: 'Start one supervised worker on the Run home or a connected Orca server',
     usage:
-      'orca orchestration worker-start (--task <task_id> | --spec <text> | --spec-file <path|->) [--keep-open] [--on <saved-environment>] [--worktree <current|selector|new-child|new-top-level>] (--agent <agent> | --terminal <handle>) [--task-title <text>] [--deps <json_array>] [--parent <task_id>] [--model <id>] [--effort <level>] [--name <name>] [--repo <selector>] [--base-branch <ref>] [--display-name <text>] [--comment <text>] [--setup <run|skip|inherit>] [--retry-of <dispatch_id>] [--timeout-ms <n>] [--run <run_id>] [--from <handle>] [--retry-request <id>] [--json]',
+      'orca orchestration worker-start (--task <task_id> | --spec <text> | --spec-file <path|->) [--keep-open] [--on <saved-environment>] [--worktree <current|selector|new-child|new-top-level>] (--agent <agent> | --terminal <handle>) [--task-title <text>] [--deps <json_array>] [--parent <task_id>] [--model <id>] [--effort <level>] [--name <name>] [--repo <selector>] [--base-branch <ref>] [--display-name <text>] [--comment <text>] [--setup <run|skip|inherit>] [--retry-of <dispatch_id>] [--execution-profile <id> --expected-profile-sha256 <digest>] [--timeout-ms <n>] [--run <run_id>] [--from <handle>] [--retry-request <id>] [--json]',
     allowedFlags: [
       ...GLOBAL_FLAGS,
       'task',
@@ -24,6 +31,8 @@ export const ORCHESTRATION_WORKER_COMMAND_SPECS: CommandSpec[] = [
       'comment',
       'setup',
       'agent',
+      'execution-profile',
+      'expected-profile-sha256',
       'model',
       'effort',
       'terminal',
@@ -36,6 +45,7 @@ export const ORCHESTRATION_WORKER_COMMAND_SPECS: CommandSpec[] = [
     identityFlagRoles: { from: 'caller', terminal: 'target' },
     notes: [
       'With --spec and no bound Run, a coordinator gets a new Run bound to it, named after the Task title; the receipt names the Run it created or joined.',
+      'An explicit execution profile needs --expected-profile-sha256 from execution-profile; unsupported hosts refuse before starting any worker.',
       'Current and existing worktrees never rerun setup; a fresh agent terminal is created unless --terminal is explicit.',
       'When reusing --terminal, pass --worktree for that terminal; current means the coordinator worktree.',
       "Reusing a settled worker's terminal with --terminal before its autoReleaseAt cancels that automatic release; after it, the start is refused while the release runs.",

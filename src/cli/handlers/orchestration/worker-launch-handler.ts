@@ -1,3 +1,4 @@
+import { WORKER_EXECUTION_PROFILE_CAPABILITY } from '../../../shared/worker-execution-profile'
 import type { CommandHandler } from '../../dispatch'
 import { printResult } from '../../format'
 import { withReceiptNext } from './receipt-next-text'
@@ -21,7 +22,38 @@ import { withResolvedNextCommands } from '../../orchestration-mutation-recovery'
 import { readTextOrFileFlag } from '../../command-body-input'
 
 export const ORCHESTRATION_WORKER_LAUNCH_HANDLER: Record<string, CommandHandler> = {
+  'orchestration execution-profile': async ({ flags, client, json }) => {
+    const status = await client.call<RuntimeStatus>('status.get')
+    if (!status.result.capabilities?.includes(WORKER_EXECUTION_PROFILE_CAPABILITY)) {
+      throw new RuntimeClientError(
+        'incompatible_runtime',
+        'Worker execution profiles are unavailable.'
+      )
+    }
+    const result = await client.call('orchestration.executionProfile', {
+      profile: getOptionalStringFlag(flags, 'profile'),
+      worktree: getOptionalStringFlag(flags, 'worktree')
+    })
+    printResult(result, json, (value) => JSON.stringify(value))
+  },
   'orchestration worker-start': async ({ flags, client, cwd, json }) => {
+    const executionProfile = getOptionalStringFlag(flags, 'execution-profile')
+    const expectedExecutionProfileSha256 = getOptionalStringFlag(flags, 'expected-profile-sha256')
+    if (executionProfile || expectedExecutionProfileSha256) {
+      if (!executionProfile || !expectedExecutionProfileSha256) {
+        throw new RuntimeClientError(
+          'invalid_argument',
+          'execution-profile and expected-profile-sha256 are required together'
+        )
+      }
+      const status = await client.call<RuntimeStatus>('status.get')
+      if (!status.result.capabilities?.includes(WORKER_EXECUTION_PROFILE_CAPABILITY)) {
+        throw new RuntimeClientError(
+          'incompatible_runtime',
+          'Worker execution profiles are unavailable.'
+        )
+      }
+    }
     const terminal = getPresentStringFlag(flags, 'terminal')
     const model = getOptionalStringFlag(flags, 'model')
     const effort = getOptionalStringFlag(flags, 'effort')
@@ -73,6 +105,7 @@ export const ORCHESTRATION_WORKER_LAUNCH_HANDLER: Record<string, CommandHandler>
       agent: getOptionalStringFlag(flags, 'agent'),
       model,
       effort,
+      ...(executionProfile ? { executionProfile, expectedExecutionProfileSha256 } : {}),
       terminal,
       retryOf: getOptionalStringFlag(flags, 'retry-of'),
       timeoutMs: getOptionalPositiveIntegerValueFlag(flags, 'timeout-ms'),
