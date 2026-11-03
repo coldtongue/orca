@@ -42,6 +42,12 @@ export function createLocalWorkerStartDispatch(
 ) {
   const startOptions = {
     worktree: requestedWorktree,
+    ...(params.executionProfile
+      ? {
+          executionProfile: params.executionProfile,
+          expectedExecutionProfileSha256: params.expectedExecutionProfileSha256
+        }
+      : {}),
     mode,
     resolvedWorktreeId: resolvedWorktreeId ?? null,
     name: params.name ?? null,

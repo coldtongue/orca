@@ -1,3 +1,4 @@
+import type { WorkerExecutionProfile } from '../../../../../../shared/worker-execution-profile'
 import type { RuntimeTerminalCreate } from '../../../../../../shared/runtime-terminal-create-contract'
 import type { AgentLaunchPreferences } from '../../../../../../shared/agent-session/agent-session-host-authority'
 import { narrowStructuredLaunchSeedOptions } from '../../../../../../shared/native-chat/input/native-chat-session-option-defaults'
@@ -60,6 +61,7 @@ export function requireWorkerAuthority(runtime: OrcaRuntimeService, terminalHand
 }
 
 export async function createExistingWorktreeWorkerTerminal(args: {
+  executionProfile?: WorkerExecutionProfile
   runtime: OrcaRuntimeService
   worktreeId: string
   agent: TuiAgent
@@ -71,6 +73,7 @@ export async function createExistingWorktreeWorkerTerminal(args: {
     // Resolve ids through agent config; cursor alone opens the desktop app, its CLI is cursor-agent.
     startupAgent: args.agent,
     launchSource: 'orchestration',
+    ...(args.executionProfile ? { workerExecutionProfile: args.executionProfile } : {}),
     suppressStartupUpdatePrompt: true,
     ...(args.launchPreferences ? { launchPreferences: args.launchPreferences } : {}),
     title: `worker-${args.taskId}`,

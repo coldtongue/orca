@@ -1,3 +1,4 @@
+import type { WorkerExecutionProfile } from '../../../../../../shared/worker-execution-profile'
 import type { RuntimeTerminalCreate } from '../../../../../../shared/runtime-terminal-create-contract'
 /** Use the shared executor for new workers; structured worktrees omit startup agent, then resolve host support before chat creation.
  * Keep worker lineage/effects and background presentation in factories; caller passes the pre-decided mode.
@@ -49,6 +50,7 @@ type WorkerAgentPlacementArgs = {
   dispatchId: string
   taskId: string
   params: WorkerStartInput
+  executionProfile?: WorkerExecutionProfile
   requestedWorktree: string
   /** Present only when this start creates a worktree. */
   creationTarget: WorkerWorktreeCreationTarget | undefined
@@ -251,6 +253,7 @@ function workerSurfaceFactory(
         agent,
         ...(args.launchPreferences ? { launchPreferences: args.launchPreferences } : {}),
         taskId: args.taskId,
+        ...(args.executionProfile ? { executionProfile: args.executionProfile } : {}),
         effects: args.effects
       })
       onTerminalCreation(terminal)

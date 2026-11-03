@@ -112,6 +112,7 @@ function readFrozenTranscript(
     source: 'transcript',
     sourceIdentity,
     provider: snapshot.agent,
+    ...(snapshot.executionMode ? { executionMode: snapshot.executionMode } : {}),
     transcript: {
       messages: snapshot.messages.slice(start, end),
       nextCursor,

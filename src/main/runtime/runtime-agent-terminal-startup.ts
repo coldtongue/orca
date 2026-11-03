@@ -1,3 +1,10 @@
+import { isWslShellName } from '../../shared/local-windows-terminal-runtime'
+import { projectAgentLaunchSettings } from '../../shared/agent-launch-settings'
+import { CODEX_REVIEW_EXECUTION_ARGS } from '../../shared/worker-execution-profile'
+import {
+  resolveCodexReviewExecutionProfile,
+  assertWorkerExecutionProfile
+} from './orchestration/codex-review-execution-profile'
 import type { SessionOptionValue } from '../../shared/native-chat/input/native-chat-session-options'
 import type { TuiAgent } from '../../shared/tui-agent'
 import type { AgentLaunchPreferences } from '../../shared/agent-session/agent-session-host-authority'
@@ -167,6 +174,27 @@ async function buildRuntimeAgentTerminalStartupOptions(
 ): Promise<TerminalCreateOptions> {
   // Repo display metadata may belong to another host; use the already-resolved PTY route for launch.
   const isRemote = Boolean(workspace.connectionId)
+  if (opts.workerExecutionProfile) {
+    const profile = opts.workerExecutionProfile
+    if (
+      agent !== 'codex' ||
+      isRemote ||
+      isWslShellName(runtime.pty.shellOverride) ||
+      !workspace.repo ||
+      opts.agentArgs !== undefined ||
+      opts.env ||
+      opts.accountEnv
+    ) {
+      throw new Error('execution_profile_launch_conflict')
+    }
+    const current = resolveCodexReviewExecutionProfile(projectAgentLaunchSettings(settings), {
+      runtimeId: host.hostIdentity,
+      worktreeId: workspace.id,
+      repoId: workspace.repo.id
+    })
+    assertWorkerExecutionProfile(current, profile.sha256)
+    opts = { ...opts, agentArgs: CODEX_REVIEW_EXECUTION_ARGS }
+  }
   const forceLine = opts.startupPromptCarry === 'force-line'
   // Create has no live PTY for later prompt delivery; refuse uncarryable text. force-line preserves createAgentSession's clean launch.
   if (opts.startupPrompt && !forceLine && !agentPromptRidesLaunchCommand(agent)) {

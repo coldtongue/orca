@@ -455,6 +455,7 @@ import {
   OrcadMigrationCatalogReferenceParams,
   OrcadMigrationCommitCatalogParams
 } from './orcad-migration-params'
+import { WorkerExecutionProfileParams } from './orchestration-execution-profile-params'
 import {
   FederationDispatchParams,
   FederationFleetSnapshotParams,
@@ -1288,6 +1289,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'orchestration.crewSubscribe': CrewSubscribeParams,
   'orchestration.dispatch': DispatchParams,
   'orchestration.dispatchShow': DispatchShowParams,
+  'orchestration.executionProfile': WorkerExecutionProfileParams,
   'orchestration.federationAck': FederationAckParams,
   'orchestration.federationAttachStart': FederationAttachStartParams,
   'orchestration.federationFleetSnapshot': FederationFleetSnapshotParams,

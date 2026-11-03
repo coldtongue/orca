@@ -1,3 +1,5 @@
+import type { prepareWorkerStartCard } from '../../../../orchestration/worker-start-card'
+import type { WorkerExecutionProfile } from '../../../../../../shared/worker-execution-profile'
 import { formatTerminalStartFailure } from '../../../../../../shared/terminal-start-failure'
 import type { OrchestrationDb } from '../../../../orchestration/db'
 import type { WorkerDispatchRow } from '../../../../orchestration/types'
@@ -113,4 +115,26 @@ function failedWorkerStartReceipt(args: WorkerStartFailureArgs): unknown {
         }
       : {})
   }
+}
+
+export function finishWorkerStart(args: {
+  result: unknown
+  executionProfile: WorkerExecutionProfile | undefined
+  terminalHandle: string | undefined
+  recordReady: ReturnType<typeof prepareWorkerStartCard>
+  card: Omit<Parameters<ReturnType<typeof prepareWorkerStartCard>>[0], 'workerAddress'>
+}): unknown {
+  const { result, executionProfile } = args
+  if (
+    args.terminalHandle &&
+    result &&
+    typeof result === 'object' &&
+    'state' in result &&
+    result.state === 'ready'
+  ) {
+    args.recordReady({ ...args.card, workerAddress: args.terminalHandle })
+  }
+  return executionProfile && result && typeof result === 'object'
+    ? { ...result, executionProfile }
+    : result
 }
