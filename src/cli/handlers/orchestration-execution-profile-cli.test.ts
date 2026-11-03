@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RuntimeClient } from '../runtime-client'
+import { dispatch } from '../dispatch'
 import { okFixture } from '../test-fixtures'
 import { ORCHESTRATION_HANDLERS } from './orchestration'
 import {
@@ -51,7 +52,7 @@ describe('explicit worker profile CLI', () => {
         ? okFixture('status', { capabilities: [WORKER_EXECUTION_PROFILE_CAPABILITY] })
         : okFixture('profile', { sha256: 'a'.repeat(64) })
     )
-    await ORCHESTRATION_HANDLERS['orchestration execution-profile']({
+    await dispatch(['orchestration', 'execution-profile'], {
       flags: new Map([
         ['profile', CODEX_REVIEW_EXECUTION_PROFILE],
         ['worktree', 'id:repo::wt']
